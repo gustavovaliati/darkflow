@@ -39,7 +39,7 @@ def postprocess(self, net_out, im, save = True):
 		imgcv = cv2.imread(im)
 	else: imgcv = im
 	h, w, _ = imgcv.shape
-	
+
 	resultsForJSON = []
 	for b in boxes:
 		boxResults = self.process_box(b, h, w, threshold)
@@ -60,7 +60,38 @@ def postprocess(self, net_out, im, save = True):
 	if not save: return imgcv
 
 	outfolder = os.path.join(self.FLAGS.imgdir, 'out')
+
+	if self.FLAGS.json:
+		outfolder = self.FLAGS.jsonoutput
+
 	img_name = os.path.join(outfolder, os.path.basename(im))
+
+	if self.FLAGS.recursive:
+		'''
+		my dir ->
+			/a/b/c/image1.jpg
+			/a/b/c/subfolder/image2.jpg
+
+		--json must be ->
+			/a/b/c/out/image1.json
+			/a/b/c/out/subfolder/image2.json
+
+		self.FLAGS.imgdir = '/a/b/c/'
+		outfolder = '/a/b/c/out'
+
+		'''
+		# if os.path.exists(outfolder):
+			# raise Exception("The folder {} already exists. You should remove it first.".format(outfolder))
+
+		#/a/b/c/subfolder/image2.jpg -> subfolder/image2.jpg
+		tmp = im.replace(self.FLAGS.imgdir,'')
+
+		#/a/b/c/out/subfolder/image2.jpg
+		img_name = os.path.join(outfolder, tmp)
+
+		#/a/b/c/out/subfolder/
+		os.makedirs(os.path.dirname(img_name), exist_ok=True)
+
 	if self.FLAGS.json:
 		textJSON = json.dumps(resultsForJSON)
 		textFile = os.path.splitext(img_name)[0] + ".json"
